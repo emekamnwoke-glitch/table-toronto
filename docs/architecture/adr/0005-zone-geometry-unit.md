@@ -39,5 +39,14 @@ trip counts — granularity comparable to the original's 60 taxi zones.
   finer secondary geography if a future feature (e.g. land-use or
   venue-attribute estimation) needs sub-neighbourhood precision — but
   they are not the primary busyness-join unit.
-- Requires pulling Toronto's Neighbourhoods boundary dataset, which had
-  not yet been done as of this ADR; it is the next pipeline step.
+- Confirmed working: all 158 official neighbourhoods loaded from Toronto
+  Open Data (EPSG:4326), and every one of the 1,071 live bike-share
+  stations spatially joined cleanly to exactly one neighbourhood polygon
+  (100% match, no stations fell outside all boundaries).
+- Quantifies the ADR-0002/0004 coverage trade-off precisely: **18 of 158
+  neighbourhoods (11.4%) have zero bike-share stations** — all in
+  Scarborough, North York, and Etobicoke (e.g. Malvern East, Rexdale-Kipling,
+  Centennial Scarborough). Restaurants in those neighbourhoods will have
+  no mobility-proxy signal at all, not just a weak one. This is the
+  concrete number behind the "thin outer-borough coverage" limitation
+  and should be cited directly in any model write-up.
