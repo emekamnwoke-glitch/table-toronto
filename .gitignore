@@ -1,0 +1,28 @@
+node_modules/
+dist/
+build/
+.env
+*.log
+
+# Raw/processed data is fetched via scripts/fetch-data.sh, not committed
+ml-pipeline/data/raw/*
+!ml-pipeline/data/raw/.gitkeep
+ml-pipeline/data/processed/*
+!ml-pipeline/data/processed/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Mobile
+.expo/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# OS
+.DS_Store
+Thumbs.db
