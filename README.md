@@ -53,11 +53,26 @@ table-toronto/
 
 ## Status
 
-Early scoping stage. Data feasibility (restaurant listings, mobility
-proxy, geocoding) has been validated against real Toronto Open Data — see
-DECISIONS.md for the numbers. No application code yet.
+Data feasibility (restaurant listings, mobility proxy, geocoding) has
+been validated against real Toronto Open Data — see DECISIONS.md for the
+numbers. The database schema is migrated and seeded (158 neighbourhoods,
+real PostGIS geometry), and a minimal API gateway serves it. Not started
+yet: the frontend clients, the busyness model, and most of the booking/
+campaign logic — see `backend/api-gateway/src/services/` for the module
+boundaries already reserved for that work.
 
 ## Setup
 
-Not yet runnable end to end. `scripts/fetch-data.sh` reproduces the raw
-data pull used during scoping.
+```bash
+cp .env.example .env                       # defaults work for local dev
+docker compose up -d postgres
+npm run migrate --prefix database
+npm run seed:neighbourhoods --prefix database
+npm install --prefix backend/api-gateway
+npm start --prefix backend/api-gateway     # http://localhost:3001
+```
+
+`scripts/fetch-data.sh` reproduces the raw Toronto Open Data pull used
+during scoping, and `ml-pipeline/scripts/geocode_restaurants.py` +
+`build_restaurant_features.py` build the restaurant-side data described
+in DECISIONS.md.

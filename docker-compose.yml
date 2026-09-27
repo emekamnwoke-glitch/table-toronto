@@ -1,3 +1,6 @@
+# Migrations are applied with `npm run migrate --prefix database`, not
+# Postgres's own docker-entrypoint-initdb.d -- that only runs once, on a
+# completely empty volume, so it can't apply new migrations later.
 services:
   postgres:
     image: postgis/postgis:16-3.4
@@ -9,7 +12,6 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./database/migrations:/docker-entrypoint-initdb.d/migrations:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-table_toronto}"]
       interval: 5s
