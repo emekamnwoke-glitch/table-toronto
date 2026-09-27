@@ -54,9 +54,9 @@ not the original's plain Expo Go tunnel workflow — see
 
 ## Open / unresolved
 
-- [ADR-0015](adr/0015-geospatial-python-io-backend.md): geopandas install
-  via `pyogrio` not yet verified working on the dev machine.
 - Land-use / venue-attribute source to replace NYC PLUTO — no ADR yet.
 - Dokku vs. CapRover final pick — deferred to actual VPS provisioning.
 - EAS Build vs. fully local native builds for mobile distribution.
 - Final project name (working name: `table-toronto`).
+- Google Places API access for the popular-times training target — not
+  yet set up; the one piece of the pipeline that can't be free/open.
