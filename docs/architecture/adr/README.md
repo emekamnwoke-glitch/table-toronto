@@ -5,6 +5,14 @@ the consequences accepted along with it. This is the authoritative record
 — [`../DECISIONS.md`](../DECISIONS.md) is a running narrative summary that
 points here, not a duplicate.
 
+## System diagram
+
+A single blueprint-style sheet maps every ADR below onto the running system — client apps, the self-hosted service envelope, the data foundation, and the offline data pipeline that builds it.
+
+![Table Toronto system architecture blueprint: an ADR reference schedule beside a floor-plan-style drawing of the client apps, the self-hosted VPS envelope with the API gateway and its supporting services, the PostgreSQL/PostGIS data foundation, the offline data pipeline, and a key plan of bike-share coverage across Toronto's neighbourhoods](../table-toronto-system-diagram.svg)
+
+[Interactive version](https://claude.ai/artifact/Nb1JdggmYPNUeZFjHr9Lnu) — scrolls better on narrow screens; private to this account, so it won't open for anyone else without being shared.
+
 | ADR | Decision | Status |
 |---|---|---|
 | [0001](0001-fresh-build-not-fork.md) | Fresh, independently written codebase — not a fork | Accepted |
@@ -21,7 +29,7 @@ points here, not a duplicate.
 | [0012](0012-routing-eta-engine.md) | Routing/ETA engine: self-hosted Valhalla | Accepted |
 | [0013](0013-geocoding-service.md) | Geocoding: Nominatim | Accepted |
 | [0014](0014-push-notification-service.md) | Push notifications: Expo push (open-source exception) | Accepted |
-| [0015](0015-geospatial-python-io-backend.md) | Geospatial Python IO backend: pyogrio over fiona | Proposed — unverified |
+| [0015](0015-geospatial-python-io-backend.md) | Geospatial Python IO backend: pyogrio over fiona | Accepted |
 
 ## Adding a new ADR
 
