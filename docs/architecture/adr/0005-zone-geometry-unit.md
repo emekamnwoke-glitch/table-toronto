@@ -47,6 +47,14 @@ trip counts — granularity comparable to the original's 60 taxi zones.
   neighbourhoods (11.4%) have zero bike-share stations** — all in
   Scarborough, North York, and Etobicoke (e.g. Malvern East, Rexdale-Kipling,
   Centennial Scarborough). Restaurants in those neighbourhoods will have
-  no mobility-proxy signal at all, not just a weak one. This is the
-  concrete number behind the "thin outer-borough coverage" limitation
-  and should be cited directly in any model write-up.
+  no mobility-proxy signal at all, not just a weak one.
+- **Refined once actual trip data was joined at restaurant grain**
+  (`ml-pipeline/scripts/build_feature_matrix.py`): station *existence*
+  understates the gap. Yonge-Doris has a live station but recorded zero
+  trips in the Q1 2026 pull, and it alone holds 83 restaurants. Measuring
+  by recorded trips rather than station presence, **375 of 7,211 seeded
+  restaurants (5.2%) have zero mobility-proxy signal for every hour**,
+  not the 291 (4.0%) the station-presence count implied. A station
+  existing with zero observed trips carries no more information than no
+  station at all — this is the number to cite in any model write-up, not
+  the earlier station-count approximation.

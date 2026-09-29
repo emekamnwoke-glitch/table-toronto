@@ -25,9 +25,20 @@ the ADR is correct.
 
 **Standing limitation to carry into any write-up:** the bike-share
 mobility proxy is both seasonal and spatially uneven (thin outside
-downtown/midtown) in a way NYC taxi volume wasn't. Expect model accuracy
-to differ from the original's 62.7% — treat that as a reportable finding,
-not a bug.
+downtown/midtown) in a way NYC taxi volume wasn't. Measured at
+restaurant grain once trips were actually joined: **375 of 7,211 seeded
+restaurants (5.2%) have zero mobility signal for every hour** — see
+ADR-0005's refinement note for why this supersedes the earlier
+station-presence estimate. Expect model accuracy to differ from the
+original's 62.7% — treat that as a reportable finding, not a bug.
+
+**Feature matrix status:** `ml-pipeline/scripts/build_feature_matrix.py`
+builds the restaurant x weekday x hour grid, but only 3 of the original's
+9 feature groups are populated (mobility demand, cyclical time, weekday
+flags). Rating, review count, visit duration, restaurant area, turnover
+rate, takeaway ratio, and the busyness-level target itself are all still
+empty placeholder columns — every one of them needs the Google Places
+API decision below before the model can train on anything.
 
 ## Infrastructure — open source end to end
 
