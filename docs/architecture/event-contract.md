@@ -78,10 +78,22 @@ real booking.
 | `POST /api/v1/reservations` | Calls the provider; records `handoff_started`, and `booking_outcome_received` (`confirmed`) only if the provider returns an outcome |
 | `POST /api/v1/reservations/:id/cancel` | Cancels the diner's own reservation and records `booking_outcome_received` with `cancelled`. Anyone else's reservation, or one not made through the journey, is a 404 |
 
-**Limits.** Per diner, per minute: recommendations 30, availability 60, events
-60, reservations and cancellations 10 (combined). Request bodies are capped
-at 32 KB and events at 20 per batch; over-limit requests get `429` and
-oversized ones `413`.
+**Limits** (starting values; watch real traffic and the 429s, then adjust).
+Per diner, per minute: recommendations 30, availability 60, events 60,
+reservations and cancellations 10 (combined). A per-IP backstop of 120 per
+minute covers all of these endpoints together, before sign-in. Request
+bodies are capped at 32 KB and events at 20 per batch. Over-limit requests
+get `429` with a `Retry-After` header; oversized ones get `413`.
+
+**Retries.** The web client retries event posts on `429`, `5xx` and network
+failures, up to three attempts with backoff (it honours `Retry-After`, but
+gives up rather than make the diner wait more than five seconds). Retries
+re-send the same events with the same `event_id`, which the server ignores if
+it already recorded them, so a retry cannot inflate the funnel.
+
+**Scaling.** The limiter's store is in memory: correct for one API process.
+With several instances, move it to a shared store (for example Redis) so every
+instance enforces the same limits.
 
 ## Storage
 

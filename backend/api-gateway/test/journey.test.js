@@ -461,6 +461,25 @@ test("cancelling: records a cancelled outcome, frees the slot, and is the diner'
   assert.equal(f.stages.find((s) => s.stage === "confirmed").total, 1);
 });
 
+test("rate limits: a per-IP backstop covers every journey endpoint, even before sign-in, and says when to retry", async () => {
+  process.env.TEST_RATE_LIMITS = "1";
+  process.env.JOURNEY_IP_LIMIT = "5";
+  try {
+    const hit = (route) => fetch(base + route, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    const routes = ["/events", "/recommendations", "/reservations", "/events", "/recommendations"];
+    for (const route of routes) assert.equal((await hit(route)).status, 401, "handled (unauthenticated) until the limit");
+
+    const limited = await hit("/reservations"); // a different endpoint, same IP
+    assert.equal(limited.status, 429);
+    const retryAfter = Number(limited.headers.get("retry-after"));
+    assert.ok(retryAfter > 0 && retryAfter <= 60, `Retry-After should be seconds, got ${limited.headers.get("retry-after")}`);
+    assert.match((await limited.json()).error, /too many/i);
+  } finally {
+    delete process.env.TEST_RATE_LIMITS;
+    delete process.env.JOURNEY_IP_LIMIT;
+  }
+});
+
 test("rate limits: each journey endpoint is limited per diner", async () => {
   process.env.TEST_RATE_LIMITS = "1";
   try {

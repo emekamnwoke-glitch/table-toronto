@@ -29,10 +29,13 @@ export type Preferences = Partial<
 export class ApiError extends Error {
   status: number
   code?: string
-  constructor(status: number, message: string, code?: string) {
+  /** Seconds the server asked us to wait (Retry-After), if it said. */
+  retryAfterSec?: number
+  constructor(status: number, message: string, code?: string, retryAfterSec?: number) {
     super(message)
     this.status = status
     this.code = code
+    this.retryAfterSec = retryAfterSec
   }
 }
 
@@ -45,7 +48,10 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string |
     },
   })
   const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new ApiError(res.status, body.error ?? `API returned ${res.status}`, body.code)
+  if (!res.ok) {
+    const retryAfter = Number(res.headers.get('Retry-After'))
+    throw new ApiError(res.status, body.error ?? `API returned ${res.status}`, body.code, retryAfter > 0 ? retryAfter : undefined)
+  }
   return body as T
 }
 
@@ -196,12 +202,34 @@ export type ClientEvent =
       requested_dining_time: string
     }
 
-export const postEvents = (token: string, events: ClientEvent[]) =>
+const postEventsOnce = (token: string, events: ClientEvent[]) =>
   request<{ received: number; recorded: number }>(
     '/api/v1/events',
     { method: 'POST', body: JSON.stringify({ events }) },
     token,
   )
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Posts behaviour events, retrying 429, 5xx and network failures with backoff.
+ * Retries re-send the same events with the same event ids, which the server
+ * ignores if it already recorded them, so a retry can never inflate the funnel.
+ * Gives up (throws) rather than making the diner wait: a Retry-After longer
+ * than maxWaitSec is not waited out.
+ */
+export async function postEvents(token: string, events: ClientEvent[], { attempts = 3, maxWaitSec = 5 } = {}) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await postEventsOnce(token, events)
+    } catch (err) {
+      const retryable = !(err instanceof ApiError) || err.status === 429 || err.status >= 500
+      const waitSec = err instanceof ApiError && err.retryAfterSec ? err.retryAfterSec : 2 ** (attempt - 1)
+      if (!retryable || attempt >= attempts || waitSec > maxWaitSec) throw err
+      await sleep(waitSec * 1000)
+    }
+  }
+}
 
 export const reserve = (
   token: string,

@@ -43,14 +43,14 @@ const handler = (fn) => async (req, res) => {
 };
 
 // POST /api/v1/recommendations -- nearest restaurants; records recommendation_shown.
-router.post("/recommendations", requireAuth, limits.recommendations, handler(async (req, res) => {
+router.post("/recommendations", limits.ip, requireAuth, limits.recommendations, handler(async (req, res) => {
   res.status(201).json(await recommend(req.auth.id, req.body));
 }));
 
 // GET /api/v1/restaurants/:id/availability?party_size=&date=&time=
 // Slots from the reservation provider. Shown labelled simulated while the
 // provider is; never part of the ranking.
-router.get("/restaurants/:id/availability", requireAuth, limits.availability, handler(async (req, res) => {
+router.get("/restaurants/:id/availability", limits.ip, requireAuth, limits.availability, handler(async (req, res) => {
   const { id } = req.params;
   if (!isUuid(id)) throw new HttpError(400, "Invalid restaurant id");
   const exists = await pool.query("SELECT 1 FROM restaurants WHERE id = $1", [id]);
@@ -73,13 +73,13 @@ router.get("/restaurants/:id/availability", requireAuth, limits.availability, ha
 }));
 
 // POST /api/v1/events -- restaurant_opened and reservation_intent only.
-router.post("/events", requireAuth, limits.events, handler(async (req, res) => {
+router.post("/events", limits.ip, requireAuth, limits.events, handler(async (req, res) => {
   res.status(202).json(await recordClientEvents(req.body, req.auth.id));
 }));
 
 // POST /api/v1/reservations -- hand off to the provider; records handoff_started
 // and, only if an outcome comes back, booking_outcome_received.
-router.post("/reservations", requireAuth, limits.reservations, handler(async (req, res) => {
+router.post("/reservations", limits.ip, requireAuth, limits.reservations, handler(async (req, res) => {
   const user = await pool.query("SELECT id, display_name FROM users WHERE id = $1", [req.auth.id]);
   if (!user.rows[0]) throw new HttpError(401, "User no longer exists");
   const result = await startReservation({ id: req.auth.id, displayName: user.rows[0].display_name }, req.body);
@@ -90,7 +90,7 @@ router.post("/reservations", requireAuth, limits.reservations, handler(async (re
 
 // POST /api/v1/reservations/:id/cancel -- cancels the diner's own reservation and
 // records booking_outcome_received with outcome "cancelled".
-router.post("/reservations/:id/cancel", requireAuth, limits.reservations, handler(async (req, res) => {
+router.post("/reservations/:id/cancel", limits.ip, requireAuth, limits.reservations, handler(async (req, res) => {
   const result = await cancelReservation({ id: req.auth.id }, req.params.id);
   const body = { ...result };
   if (result.simulated) body.notice = "Demonstration. The simulated booking was cancelled.";
