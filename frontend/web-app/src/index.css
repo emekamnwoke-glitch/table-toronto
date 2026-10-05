@@ -50,3 +50,38 @@ li button:hover, li button.active { background: var(--active); }
   .map { order: -1; }
   .panel { border-right: 0; border-top: 1px solid var(--border); }
 }
+
+/* Auth + onboarding */
+.auth-page { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.auth-card {
+  width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px;
+  padding: 24px; border: 1px solid var(--border); border-radius: 12px;
+}
+.auth-card.wide { max-width: 560px; }
+.auth-card label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.auth-card input {
+  padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); font: inherit;
+}
+button.primary {
+  padding: 10px 14px; border: 0; border-radius: 6px; background: var(--accent);
+  color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+}
+button.primary:disabled { opacity: 0.6; cursor: default; }
+button.link {
+  background: none; border: 0; padding: 0; color: var(--muted); font: inherit;
+  font-size: 13px; text-decoration: underline; cursor: pointer; align-self: flex-start;
+}
+a { color: var(--accent); }
+fieldset { border: 0; padding: 0; margin: 0; }
+legend { font-weight: 600; font-size: 14px; margin-bottom: 8px; padding: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px;
+  background: none; color: inherit; font: inherit; font-size: 14px; cursor: pointer;
+}
+.chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.center { text-align: center; padding: 48px 0; }
+.notice { margin: 0; padding: 8px 10px; border-radius: 6px; background: var(--active); font-size: 13px; }

@@ -1,75 +1,35 @@
-import { useEffect, useMemo, useState } from 'react'
-import { fetchRestaurants, type Restaurant } from './api'
-import { RestaurantMap } from './Map'
+import type { ReactNode } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from './authContext'
+import Customer from './pages/Customer'
+import Login from './pages/Login'
+import Merchant from './Merchant'
+import Onboarding from './pages/Onboarding'
+
+function RequireAuth({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth()
+  if (loading) return <p className="muted center">Loading…</p>
+  if (!user) return <Navigate to="/login" replace />
+  return children
+}
+
+// Diners who haven't finished or skipped onboarding go through it once.
+function Home() {
+  const { user } = useAuth()
+  if (user && !user.onboarded) return <Navigate to="/onboarding" replace />
+  return <Customer />
+}
 
 export default function App() {
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [query, setQuery] = useState('')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetchRestaurants().then(setRestaurants).catch((e) => setError(e.message))
-  }, [])
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return restaurants
-    return restaurants.filter(
-      (r) =>
-        r.operating_name.toLowerCase().includes(q) ||
-        r.neighbourhood?.toLowerCase().includes(q) ||
-        r.cuisine?.toLowerCase().includes(q),
-    )
-  }, [restaurants, query])
-
-  const selected = restaurants.find((r) => r.id === selectedId) ?? null
-
   return (
-    <div className="app">
-      <aside className="panel">
-        <header>
-          <h1>Table Toronto</h1>
-          <p className="muted">Merchant dashboard</p>
-        </header>
-        <input
-          type="search"
-          placeholder="Search name, neighbourhood, cuisine"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        {error && <p className="error">Could not load restaurants: {error}</p>}
-        {selected && (
-          <section className="detail">
-            <h2>{selected.operating_name}</h2>
-            <p>{selected.address}</p>
-            <dl>
-              <dt>Neighbourhood</dt>
-              <dd>{selected.neighbourhood ?? 'Unknown'}</dd>
-              <dt>Cuisine</dt>
-              <dd>{selected.cuisine ?? 'Not recorded'}</dd>
-              <dt>Accessible</dt>
-              <dd>{selected.accessible ? 'Yes' : 'No'}</dd>
-              <dt>Busyness</dt>
-              <dd className="muted">Pending model (needs Places API data)</dd>
-            </dl>
-          </section>
-        )}
-        <p className="muted">
-          {filtered.length.toLocaleString()} of {restaurants.length.toLocaleString()} restaurants
-        </p>
-        <ul>
-          {filtered.slice(0, 100).map((r) => (
-            <li key={r.id}>
-              <button className={r.id === selectedId ? 'active' : ''} onClick={() => setSelectedId(r.id)}>
-                <strong>{r.operating_name}</strong>
-                <span className="muted">{r.neighbourhood ?? r.address}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </aside>
-      <RestaurantMap restaurants={filtered} selectedId={selectedId} onSelect={setSelectedId} />
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login mode="login" />} />
+      <Route path="/register" element={<Login mode="register" />} />
+      <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
+      <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
+      {/* Merchant login is a separate piece of work; this is still the open dashboard. */}
+      <Route path="/merchant" element={<Merchant />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }

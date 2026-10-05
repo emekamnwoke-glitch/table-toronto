@@ -36,7 +36,10 @@ export function RestaurantMap({ restaurants, selectedId, onSelect }: Props) {
   const map = useRef<maplibregl.Map | null>(null)
   const ready = useRef(false)
   const latest = useRef({ restaurants, selectedId, onSelect })
-  latest.current = { restaurants, selectedId, onSelect }
+  // Event handlers registered once on the map read the latest props from here.
+  useEffect(() => {
+    latest.current = { restaurants, selectedId, onSelect }
+  })
 
   useEffect(() => {
     const m = new maplibregl.Map({
