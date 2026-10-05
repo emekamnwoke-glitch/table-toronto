@@ -72,3 +72,31 @@ export const savePreferences = (token: string, prefs: Preferences) =>
     { method: 'PATCH', body: JSON.stringify(prefs) },
     token,
   ).then((r) => r.user)
+
+export interface MerchantRestaurant {
+  id: string
+  name: string
+  address: string
+  neighbourhood: string | null
+  lng: number
+  lat: number
+  cuisine: string | null
+  priceLevel: number | null
+  accessible: boolean
+  seatingCapacity: number | null
+  holdWindowMinutes: number
+}
+
+export type RestaurantEdit = Partial<
+  Pick<MerchantRestaurant, 'cuisine' | 'priceLevel' | 'accessible' | 'seatingCapacity' | 'holdWindowMinutes'>
+>
+
+export const fetchMyRestaurant = (token: string) =>
+  request<{ restaurant: MerchantRestaurant }>('/api/v1/merchant/restaurant', {}, token).then((r) => r.restaurant)
+
+export const saveMyRestaurant = (token: string, edit: RestaurantEdit) =>
+  request<{ restaurant: MerchantRestaurant }>(
+    '/api/v1/merchant/restaurant',
+    { method: 'PATCH', body: JSON.stringify(edit) },
+    token,
+  ).then((r) => r.restaurant)

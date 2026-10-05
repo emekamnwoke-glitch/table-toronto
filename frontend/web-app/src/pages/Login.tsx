@@ -3,8 +3,14 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../authContext'
 import { Logo } from '../Logo'
 
-export default function Login({ mode }: { mode: 'login' | 'register' }) {
-  const { user, signIn, signUp } = useAuth()
+export default function Login({
+  mode,
+  audience = 'diner',
+}: {
+  mode: 'login' | 'register'
+  audience?: 'diner' | 'manager'
+}) {
+  const { user, signIn, signUp, signOut } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -12,6 +18,7 @@ export default function Login({ mode }: { mode: 'login' | 'register' }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const registering = mode === 'register'
+  const manager = audience === 'manager'
 
   if (user) return <Navigate to="/" replace />
 
@@ -21,7 +28,14 @@ export default function Login({ mode }: { mode: 'login' | 'register' }) {
     setBusy(true)
     try {
       if (registering) await signUp(email, password, name)
-      else await signIn(email, password)
+      else {
+        const signedIn = await signIn(email, password)
+        if (manager && signedIn.role !== 'manager') {
+          signOut()
+          setError('This account is not a restaurant account. Diners sign in on the main page.')
+          return
+        }
+      }
       navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -35,9 +49,11 @@ export default function Login({ mode }: { mode: 'login' | 'register' }) {
       <section className="brand-panel">
         <Logo inverse />
         <div>
-          <p className="brand-line">A table for tonight, anywhere in Toronto.</p>
+          <p className="brand-line">{manager ? 'Fill the tables you have tonight.' : 'A table for tonight, anywhere in Toronto.'}</p>
           <p className="brand-sub">
-            Browse restaurants across all 158 neighbourhoods and see how busy they are before you go.
+            {manager
+              ? 'Keep your restaurant details current so the right diners find you.'
+              : 'Browse restaurants across all 158 neighbourhoods and see how busy they are before you go.'}
           </p>
         </div>
         <svg className="brand-motif" viewBox="0 0 200 200" aria-hidden="true">
@@ -49,9 +65,13 @@ export default function Login({ mode }: { mode: 'login' | 'register' }) {
 
       <section className="form-panel">
         <form className="auth-card" onSubmit={submit}>
-          <h1>{registering ? 'Create your account' : 'Welcome back'}</h1>
+          <h1>{registering ? 'Create your account' : manager ? 'Restaurant sign in' : 'Welcome back'}</h1>
           <p className="muted">
-            {registering ? 'It takes a minute. You can set your tastes next.' : 'Sign in to find a table.'}
+            {registering
+              ? 'It takes a minute. You can set your tastes next.'
+              : manager
+                ? 'For restaurant managers. Your account is set up by the Table Toronto team.'
+                : 'Sign in to find a table.'}
           </p>
           {registering && (
             <label>
@@ -90,7 +110,11 @@ export default function Login({ mode }: { mode: 'login' | 'register' }) {
             {busy ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}
           </button>
           <p className="muted">
-            {registering ? (
+            {manager ? (
+              <>
+                Not a restaurant? <Link to="/login">Diner sign in</Link>
+              </>
+            ) : registering ? (
               <>
                 Already have an account? <Link to="/login">Sign in</Link>
               </>
@@ -100,6 +124,11 @@ export default function Login({ mode }: { mode: 'login' | 'register' }) {
               </>
             )}
           </p>
+          {!manager && (
+            <p className="muted">
+              Restaurant manager? <Link to="/merchant/login">Sign in here</Link>
+            </p>
+          )}
         </form>
       </section>
     </main>

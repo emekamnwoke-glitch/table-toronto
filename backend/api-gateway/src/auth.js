@@ -32,4 +32,14 @@ function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { assertJwtSecret, signToken, requireAuth };
+// Use after requireAuth. The role comes from the signed token, so it is only
+// as fresh as the token (7 days); routes acting on a specific resource should
+// also check ownership in the query, as routes/merchant.js does.
+function requireRole(role) {
+  return (req, res, next) => {
+    if (req.auth?.role !== role) return res.status(403).json({ error: `Requires ${role} account` });
+    next();
+  };
+}
+
+module.exports = { assertJwtSecret, signToken, requireAuth, requireRole };

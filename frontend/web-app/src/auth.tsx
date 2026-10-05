@@ -60,9 +60,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthState = {
     user,
     loading,
-    signIn: async (email, password) => accept(await api.login(email, password)),
+    signIn: async (email, password) => {
+      const session = await api.login(email, password)
+      accept(session)
+      return session.user
+    },
     signUp: async (email, password, name) => accept(await api.register(email, password, name)),
     signOut,
+    token,
     updatePreferences: async (prefs) => {
       if (token) setUser(await api.savePreferences(token, prefs))
     },

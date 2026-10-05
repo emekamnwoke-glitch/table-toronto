@@ -5,9 +5,11 @@
   "scripts": {
     "migrate": "node scripts/migrate.js",
     "seed:neighbourhoods": "node scripts/seed-neighbourhoods.js",
-    "seed:restaurants": "node scripts/seed-restaurants.js"
+    "seed:restaurants": "node scripts/seed-restaurants.js",
+    "create-manager": "node scripts/create-manager.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "csv-parse": "^5.6.0",
     "dotenv": "^16.4.5",
     "pg": "^8.13.0"

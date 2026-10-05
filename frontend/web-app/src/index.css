@@ -170,3 +170,12 @@ legend { font-family: var(--font-display); font-size: 18px; margin-bottom: 10px;
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Restaurant dashboard form */
+.stack { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.stack label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; }
+.stack label.check { flex-direction: row; align-items: center; }
+.stack input:not([type='checkbox']), .stack select {
+  min-height: 44px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); color: var(--ink); font: inherit;
+}
