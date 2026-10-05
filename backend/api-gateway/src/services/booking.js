@@ -94,6 +94,7 @@ async function startReservation(diner, input, db = pool) {
             outcome: "confirmed",
             provider_id: provider.id,
             covers: result.reservation.partySize,
+            reservation_id: result.reservation.id,
           },
         },
       ],
@@ -105,4 +106,56 @@ async function startReservation(diner, input, db = pool) {
   return { ...result, simulated: provider.simulated, providerId: provider.id };
 }
 
-module.exports = { startReservation };
+/**
+ * Cancels a reservation the diner made, and records booking_outcome_received
+ * with outcome "cancelled". Only the diner who made it can cancel it, and only
+ * through the journey that produced it: the confirmed outcome event is how we
+ * know which recommendation it belongs to. Anything else is a 404, so the
+ * existence of other people's reservations is not revealed.
+ */
+async function cancelReservation(diner, reservationId, db = pool) {
+  const notFound = new HttpError(404, "Reservation not found");
+  if (typeof reservationId !== "string" || !reservationId) throw notFound;
+
+  const user = pseudonym(diner.id);
+  const { rows } = await db.query(
+    `SELECT session_id, recommendation_id, restaurant_id, payload FROM events
+     WHERE event_name = 'booking_outcome_received' AND user_id = $1
+       AND payload->>'outcome' = 'confirmed' AND payload->>'reservation_id' = $2`,
+    [user, reservationId]
+  );
+  const confirmed = rows[0];
+  if (!confirmed) throw notFound;
+
+  const provider = getProvider();
+  // The provider-side owner must match too, checked before anything is cancelled.
+  const existing = await provider.getReservation(reservationId);
+  if (existing.userId !== diner.id) throw notFound;
+  const reservation = await provider.cancelReservation(reservationId);
+
+  await insertEvents(
+    [
+      {
+        eventId: deterministicId("booking_outcome_received", "cancelled", reservationId),
+        eventName: "booking_outcome_received",
+        occurredAt: new Date().toISOString(),
+        sessionId: confirmed.session_id,
+        recommendationId: confirmed.recommendation_id,
+        userId: user,
+        simulated: provider.simulated,
+        restaurantId: confirmed.restaurant_id,
+        payload: {
+          restaurant_id: confirmed.restaurant_id,
+          outcome: "cancelled",
+          provider_id: provider.id,
+          covers: confirmed.payload.covers,
+          reservation_id: reservationId,
+        },
+      },
+    ],
+    db
+  );
+  return { reservation, simulated: provider.simulated, providerId: provider.id };
+}
+
+module.exports = { startReservation, cancelReservation };

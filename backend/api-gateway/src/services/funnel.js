@@ -71,7 +71,24 @@ async function funnel({ since, recommendationIds } = {}, db = pool) {
     includesSimulated: false,
   });
 
-  return { stages, rates, confirmedBookingsReal: by.confirmed.real };
+  // Confirmed counts are gross: a cancelled booking stays in "confirmed" and is
+  // also counted here, so net figures are never silently implied.
+  const { rows: cancelled } = await db.query(
+    `SELECT simulated, count(DISTINCT recommendation_id)::int AS journeys
+     FROM events
+     WHERE event_name = 'booking_outcome_received' AND payload->>'outcome' = 'cancelled'
+       AND ($1::timestamptz IS NULL OR occurred_at >= $1)
+       AND ($2::uuid[] IS NULL OR recommendation_id = ANY($2))
+     GROUP BY simulated`,
+    [since ?? null, recommendationIds ?? null]
+  );
+  const cancellations = {
+    real: cancelled.find((r) => r.simulated === false)?.journeys ?? 0,
+    simulated: cancelled.find((r) => r.simulated === true)?.journeys ?? 0,
+  };
+  cancellations.total = cancellations.real + cancellations.simulated;
+
+  return { stages, rates, confirmedBookingsReal: by.confirmed.real, cancellations };
 }
 
 module.exports = { funnel, STAGES };

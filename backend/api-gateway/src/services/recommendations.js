@@ -4,8 +4,10 @@
 //
 // - Straight-line (geodesic) distance, labelled as such. Not walking time.
 // - Availability is not an input: it is shown later, labelled simulated.
-// - The diner's coordinates are used for this query and then discarded;
-//   only per-restaurant distances are stored in the event.
+// - The diner's coordinates are used for this query and then discarded.
+//   The stored event keeps each restaurant's rank and a coarse distance
+//   band, not distances: several exact distances to restaurants with known
+//   locations would let anyone work the diner's position back out.
 const crypto = require("node:crypto");
 const { pool } = require("../db");
 const { HttpError } = require("../httpError");
@@ -13,6 +15,16 @@ const { torontoInstant } = require("../providers/mockProvider");
 const { deterministicId, insertEvents, pseudonym, isUuid } = require("./events");
 
 const RANKING_VERSION = "v1-proximity";
+
+// Coarse bands for analytics. Wide enough that, even with five restaurants'
+// bands and known locations, the diner can only be placed in a large area.
+const BANDS = [
+  { upToKm: 0.5, band: "under_500m" },
+  { upToKm: 1, band: "500m_to_1km" },
+  { upToKm: 2, band: "1_to_2km" },
+  { upToKm: Infinity, band: "over_2km" },
+];
+const distanceBand = (km) => BANDS.find((b) => km < b.upToKm).band;
 
 // "850 m away" under a kilometre, "1.2 km away" beyond. Always said to be a straight line.
 function describeDistance(km) {
@@ -102,7 +114,7 @@ async function recommend(authUserId, input, db = pool) {
         payload: {
           restaurant_ids: items.map((i) => i.restaurant.id),
           ranked_by: "proximity",
-          items: items.map((i) => ({ restaurant_id: i.restaurant.id, rank: i.rank, distance_km: i.distanceKm })),
+          items: items.map((i) => ({ restaurant_id: i.restaurant.id, rank: i.rank, distance_band: distanceBand(i.distanceKm) })),
           signals_used: ["proximity"],
           ranking_version: RANKING_VERSION,
           party_size: q.partySize,
@@ -127,4 +139,4 @@ async function recommend(authUserId, input, db = pool) {
   };
 }
 
-module.exports = { recommend, RANKING_VERSION, torontoToday };
+module.exports = { recommend, RANKING_VERSION, torontoToday, distanceBand };

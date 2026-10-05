@@ -102,7 +102,9 @@ nothing yet depends on the booking model.
    [`docs/product/first-slice-diner-journey.md`](../../product/first-slice-diner-journey.md);
    field-level event definitions, who emits each event, and the counting
    rules are in [`docs/architecture/event-contract.md`](../event-contract.md).
-   Events never store the diner's coordinates. A booking is counted as
+   Events never store the diner's coordinates or exact distances to restaurants
+   (which could be combined with the restaurants' known locations to place
+   the diner); they keep rank and a coarse distance band. A booking is counted as
    confirmed only when TABLE receives a real confirmation; the simulated
    provider's confirmations are recorded with `simulated = true` and are
    never counted as bookings.

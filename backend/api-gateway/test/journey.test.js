@@ -13,7 +13,7 @@ const crypto = require("node:crypto");
 const { assertJwtSecret } = require("../src/auth");
 const app = require("../src/app");
 const { pool } = require("../src/db");
-const { pseudonym } = require("../src/services/events");
+const { pseudonym, assertEventKey } = require("../src/services/events");
 const { funnel } = require("../src/services/funnel");
 const { torontoToday } = require("../src/services/recommendations");
 
@@ -97,6 +97,7 @@ let batchB;
 
 before(async () => {
   assertJwtSecret();
+  assertEventKey();
   await new Promise((resolve) => {
     server = app.listen(0, resolve);
   });
@@ -154,7 +155,11 @@ test("recommendations: the shown event carries the spec fields and no precise lo
   assert.equal(p.location_source, "map_pick");
   assert.equal(p.party_size, 2);
   assert.deepEqual(p.items.map((i) => i.rank), [1, 2, 3, 4, 5]);
-  assert.ok(p.items.every((i) => typeof i.distance_km === "number"));
+  // Only rank and a coarse band per restaurant: exact distances to restaurants with
+  // known locations would let someone work the diner's position back out.
+  assert.ok(p.items.every((i) => JSON.stringify(Object.keys(i).sort()) === '["distance_band","rank","restaurant_id"]'));
+  assert.ok(p.items.every((i) => ["under_500m", "500m_to_1km", "1_to_2km", "over_2km"].includes(i.distance_band)));
+  assert.ok(!JSON.stringify(event).includes("distance_km"), "no per-restaurant distances in stored events");
 
   const stored = JSON.stringify(event);
   assert.ok(!stored.includes(String(CENTER_A.lat)) && !stored.includes(String(CENTER_A.lng)), "coordinates must not be stored");
@@ -390,4 +395,108 @@ test("funnel: an empty selection reports zeros and null rates, not errors", asyn
   const f = await funnel({ recommendationIds: [crypto.randomUUID()] });
   assert.ok(f.stages.every((s) => s.total === 0));
   assert.ok(f.rates.every((r) => r.value === null));
+});
+
+test("event pseudonyms use their own key, not the login secret", () => {
+  const savedKey = process.env.EVENT_PSEUDONYM_KEY;
+  const savedJwt = process.env.JWT_SECRET;
+  try {
+    const before = pseudonym("account-1");
+    process.env.JWT_SECRET = "x".repeat(64); // rotating login secrets must not change identities
+    assert.equal(pseudonym("account-1"), before);
+    process.env.EVENT_PSEUDONYM_KEY = "y".repeat(64);
+    assert.notEqual(pseudonym("account-1"), before, "a different key gives different pseudonyms");
+
+    process.env.EVENT_PSEUDONYM_KEY = "short";
+    assert.throws(assertEventKey, /EVENT_PSEUDONYM_KEY/);
+    delete process.env.EVENT_PSEUDONYM_KEY;
+    assert.throws(assertEventKey, /EVENT_PSEUDONYM_KEY/);
+  } finally {
+    process.env.EVENT_PSEUDONYM_KEY = savedKey;
+    process.env.JWT_SECRET = savedJwt;
+  }
+});
+
+test("cancelling: records a cancelled outcome, frees the slot, and is the diner's alone", async () => {
+  const rec = await recommend(alice.token, CENTER_A);
+  const restaurantId = rec.items[3].restaurant.id;
+  const slot = await slotFor(alice.token, restaurantId, 20);
+  const booked = await reserve(alice.token, rec, restaurantId, slot, { party_size: 20 });
+  assert.equal(booked.status, 201);
+  const reservationId = booked.body.reservation.id;
+
+  const cancelPath = `/reservations/${reservationId}/cancel`;
+  assert.equal((await call("POST", cancelPath, { token: bob.token })).status, 404, "someone else's reservation");
+  assert.equal((await call("POST", cancelPath)).status, 401);
+  assert.equal((await call("POST", "/reservations/not-a-real-id/cancel", { token: alice.token })).status, 404);
+
+  const res = await call("POST", cancelPath, { token: alice.token });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.reservation.status, "cancelled");
+  assert.match(res.body.notice, /simulated/i);
+
+  const cancelled = (await eventsFor(rec.recommendationId)).filter(
+    (e) => e.event_name === "booking_outcome_received" && e.payload.outcome === "cancelled"
+  );
+  assert.equal(cancelled.length, 1);
+  assert.equal(cancelled[0].simulated, true);
+  assert.equal(cancelled[0].payload.reservation_id, reservationId);
+  assert.equal(cancelled[0].payload.covers, 20);
+
+  // Cancelling again changes nothing and records nothing new.
+  assert.equal((await call("POST", cancelPath, { token: alice.token })).status, 200);
+  assert.equal(
+    (await eventsFor(rec.recommendationId)).filter((e) => e.payload.outcome === "cancelled").length,
+    1
+  );
+
+  // The freed slot can be booked again (it was full at party size 20).
+  const fresh = await slotFor(alice.token, restaurantId, 20);
+  assert.equal((await reserve(alice.token, rec, restaurantId, fresh, { party_size: 20 })).status, 201);
+
+  // The funnel keeps confirmations gross and reports cancellations alongside.
+  const f = await funnel({ recommendationIds: [rec.recommendationId] });
+  assert.equal(f.cancellations.simulated, 1);
+  assert.equal(f.cancellations.real, 0);
+  assert.equal(f.stages.find((s) => s.stage === "confirmed").total, 1);
+});
+
+test("rate limits: each journey endpoint is limited per diner", async () => {
+  process.env.TEST_RATE_LIMITS = "1";
+  try {
+    const carol = await signUp("carol");
+    const statuses = async (route, n, init = {}) => {
+      const out = [];
+      for (let i = 0; i < n; i++) out.push((await call("POST", route, { token: carol.token, body: {}, ...init })).status);
+      return out;
+    };
+
+    const events = await statuses("/events", 61);
+    assert.ok(events.slice(0, 60).every((s) => s === 400), "the first 60 are handled (and rejected as malformed)");
+    assert.equal(events[60], 429);
+
+    const reservations = await statuses("/reservations", 11);
+    assert.equal(reservations[10], 429);
+    assert.ok(reservations.slice(0, 10).every((s) => s === 400));
+
+    // Limits are per diner: another account is unaffected.
+    assert.equal((await call("POST", "/events", { token: alice.token, body: {} })).status, 400);
+  } finally {
+    delete process.env.TEST_RATE_LIMITS;
+  }
+});
+
+test("request bodies are size-limited and malformed JSON gets a JSON error", async () => {
+  const big = { events: [{ junk: "x".repeat(40 * 1024) }] };
+  const res = await call("POST", "/events", { token: alice.token, body: big });
+  assert.equal(res.status, 413);
+  assert.match(res.body.error, /too large/i);
+
+  const raw = await fetch(base + "/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${alice.token}` },
+    body: "{not json",
+  });
+  assert.equal(raw.status, 400);
+  assert.match((await raw.json()).error, /malformed/i);
 });

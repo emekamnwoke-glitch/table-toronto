@@ -16,9 +16,13 @@ behaviour events from
   response is not a booking.
 - **Unknown stays unknown.** If a booking outcome is not available, no
   outcome event is emitted. A fake confirmation is never recorded.
-- **No precise location.** Events never store the diner's coordinates. They
-  store distances from the diner to each restaurant and the way the
-  location was chosen.
+- **No precise location, direct or derived.** Events never store the
+  diner's coordinates, and never store exact distances to restaurants:
+  several distances to restaurants with known locations would let anyone
+  work the diner's position back out. They store each restaurant's rank, a
+  coarse distance band (`under_500m`, `500m_to_1km`, `1_to_2km`,
+  `over_2km`), the search radius, and how the location was chosen. The
+  diner still sees their exact distances on screen; they are just not kept.
 - **Server emits what it did; the client reports what the diner did.**
 
 ## Envelope (every event)
@@ -31,7 +35,7 @@ behaviour events from
 | `received_at` | Set by the server on insert |
 | `session_id` | uuid, one per app visit |
 | `recommendation_id` | uuid. Links every event of one journey to the recommendation that started it |
-| `user_id` | Pseudonymous: an HMAC of the account id, not the account id. Stable per user while the server's `JWT_SECRET` is unchanged; rotating that secret starts a new pseudonym for everyone |
+| `user_id` | Pseudonymous: an HMAC of the account id, not the account id. Keyed by its own secret, `EVENT_PSEUDONYM_KEY`, not by `JWT_SECRET`, so rotating login secrets does not break event continuity. Changing the event key starts a new pseudonym for everyone |
 | `simulated` | boolean. See "Deriving `simulated`" |
 | `restaurant_id` | uuid. Present on every event except `recommendation_shown` |
 | `payload` | The additional fields below |
@@ -40,11 +44,11 @@ behaviour events from
 
 | Event | Emitted by | Additional fields |
 |---|---|---|
-| `recommendation_shown` | server | `restaurant_ids` (display order); `ranked_by` (`proximity`); `items`: per restaurant `{ restaurant_id, rank, distance_km }`; `signals_used` (`["proximity"]`); `ranking_version` (`v1-proximity`); `party_size`; `requested_dining_time`; `location_source` (`device` or `map_pick`); `radius_km` |
+| `recommendation_shown` | server | `restaurant_ids` (display order); `ranked_by` (`proximity`); `items`: per restaurant `{ restaurant_id, rank, distance_band }`; `signals_used` (`["proximity"]`); `ranking_version` (`v1-proximity`); `party_size`; `requested_dining_time`; `location_source` (`device` or `map_pick`); `radius_km` |
 | `restaurant_opened` | client | `restaurant_id`; `rank` |
 | `reservation_intent` | client | `restaurant_id`; `party_size`; `requested_dining_time` |
 | `handoff_started` | server | `restaurant_id`; `destination_type` (`demo` or `provider`); `provider_id` |
-| `booking_outcome_received` | server | `restaurant_id`; `outcome` (`confirmed` or `cancelled`); `provider_id`; `covers` |
+| `booking_outcome_received` | server | `restaurant_id`; `outcome` (`confirmed` or `cancelled`); `provider_id`; `covers`; `reservation_id` |
 
 `recommendation_shown` records that a list was *served*, not that it was on
 screen. `destination_type = demo` means no real reservation can result.
@@ -71,7 +75,13 @@ real booking.
 | `POST /api/v1/recommendations` | Ranks restaurants and records `recommendation_shown` |
 | `GET /api/v1/restaurants/:id/availability` | Returns slots from the provider, with `source.simulated` |
 | `POST /api/v1/events` | Accepts `{ "events": [ ... ] }` (up to 20) of `restaurant_opened` and `reservation_intent` only. Rejects the whole batch if any event is malformed, names a recommendation that is not the caller's, or names a restaurant that was not in it |
-| `POST /api/v1/reservations` | Calls the provider; records `handoff_started`, and `booking_outcome_received` only if the provider returns an outcome |
+| `POST /api/v1/reservations` | Calls the provider; records `handoff_started`, and `booking_outcome_received` (`confirmed`) only if the provider returns an outcome |
+| `POST /api/v1/reservations/:id/cancel` | Cancels the diner's own reservation and records `booking_outcome_received` with `cancelled`. Anyone else's reservation, or one not made through the journey, is a 404 |
+
+**Limits.** Per diner, per minute: recommendations 30, availability 60, events
+60, reservations and cancellations 10 (combined). Request bodies are capped
+at 32 KB and events at 20 per batch; over-limit requests get `429` and
+oversized ones `413`.
 
 ## Storage
 
@@ -99,6 +109,10 @@ bookings per handoff uses real events only and is `null` when there are no
 real handoffs**; it is never computed from simulated confirmations. A
 handoff with no outcome event is reported as outcome unknown, not as a
 failure and not as a success.
+
+Confirmed counts are **gross**: a cancelled booking stays counted as
+confirmed, and cancellations are reported next to it (real and simulated),
+so a net figure is never silently implied.
 
 Run it with `npm run funnel --prefix backend/api-gateway`.
 

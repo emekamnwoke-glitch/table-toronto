@@ -143,8 +143,9 @@ none is faked to fill the gap.
    (needs no geocoder) or an address box (needs Nominatim, not yet
    running). Proposed: map pick.
 2. ~~Location privacy~~ **Decided:** events never store the diner's
-   coordinates, only per-restaurant distances and how the location was
-   chosen.
+   coordinates, and not exact per-restaurant distances either (those could
+   be combined with the restaurants' known locations to place the diner).
+   They keep rank, a coarse distance band and how the location was chosen.
 3. **For later, not v1:** `restaurants.accessible` is `NOT NULL DEFAULT
    false`, so "not accessible" and "unknown" look the same. Make it
    nullable before accessibility becomes a hard filter.

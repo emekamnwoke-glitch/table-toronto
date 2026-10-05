@@ -214,3 +214,10 @@ export const reserve = (
     idempotency_key: string
   },
 ) => request<ReservationResult>('/api/v1/reservations', { method: 'POST', body: JSON.stringify(body) }, token)
+
+export const cancelReservation = (token: string, reservationId: string) =>
+  request<{ reservation: { id: string; status: 'cancelled' }; simulated: boolean; notice?: string }>(
+    `/api/v1/reservations/${reservationId}/cancel`,
+    { method: 'POST' },
+    token,
+  )

@@ -21,7 +21,8 @@ async function main() {
     const note = r.includesSimulated ? " (includes simulated steps)" : "";
     console.log(`  ${r.name.padEnd(24)} ${value.padStart(7)}  [${r.basis}]${note}`);
   }
-  console.log(`\nconfirmed bookings (real): ${result.confirmedBookingsReal}`);
+  console.log(`\nconfirmed bookings (real): ${result.confirmedBookingsReal}  (gross: cancellations are counted separately)`);
+  console.log(`cancellations: ${result.cancellations.total} (real ${result.cancellations.real}, simulated ${result.cancellations.simulated})`);
   if (result.confirmedBookingsReal === 0) {
     console.log("No real confirmations exist: simulated confirmations are never counted as bookings.");
   }

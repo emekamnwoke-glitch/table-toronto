@@ -21,11 +21,24 @@ const isUuid = (v) => typeof v === "string" && UUID_RE.test(v);
 const isInt = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
 const isInstant = (v) => typeof v === "string" && !Number.isNaN(Date.parse(v));
 
-// Stable per user while JWT_SECRET is unchanged; one-way, so the events table
-// cannot be joined back to accounts without the secret.
+// Called at startup: the pseudonym key is its own secret (EVENT_PSEUDONYM_KEY),
+// not derived from JWT_SECRET, so rotating login secrets does not break the
+// continuity of stored events and one leak does not expose the other.
+function assertEventKey() {
+  const k = process.env.EVENT_PSEUDONYM_KEY;
+  if (!k || k.length < 32) {
+    throw new Error(
+      "EVENT_PSEUDONYM_KEY must be set to a random string of at least 32 characters " +
+        '(e.g. node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))")'
+    );
+  }
+}
+
+// One-way and stable per user while EVENT_PSEUDONYM_KEY is unchanged; the events
+// table cannot be joined back to accounts without the key.
 function pseudonym(userId) {
-  const key = crypto.createHmac("sha256", process.env.JWT_SECRET).update("table-toronto/events/user-id").digest();
-  return crypto.createHmac("sha256", key).update(String(userId)).digest("hex").slice(0, 32);
+  assertEventKey();
+  return crypto.createHmac("sha256", process.env.EVENT_PSEUDONYM_KEY).update(String(userId)).digest("hex").slice(0, 32);
 }
 
 // A uuid derived from its inputs, so a replayed request records the same
@@ -151,6 +164,7 @@ async function recordClientEvents(body, authUserId, db = pool) {
 }
 
 module.exports = {
+  assertEventKey,
   pseudonym,
   deterministicId,
   insertEvents,

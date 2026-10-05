@@ -1,7 +1,9 @@
 require("dotenv").config({ path: require("path").join(__dirname, "../../../.env") });
 
 const { assertJwtSecret } = require("./auth");
+const { assertEventKey } = require("./services/events");
 assertJwtSecret();
+assertEventKey();
 
 const app = require("./app");
 

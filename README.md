@@ -106,7 +106,7 @@ manager fills them in or another source is added.
 ## Setup
 
 ```bash
-cp .env.example .env     # then set JWT_SECRET (see the comment in the file); the rest works for local dev
+cp .env.example .env     # then set JWT_SECRET and EVENT_PSEUDONYM_KEY (see the comments in the file); the rest works for local dev
 docker compose up -d postgres
 npm run migrate --prefix database
 npm run seed:neighbourhoods --prefix database

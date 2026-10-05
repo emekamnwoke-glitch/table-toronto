@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ApiError,
+  cancelReservation,
   fetchAvailability,
   postEvents,
   recommend,
@@ -140,7 +141,7 @@ export default function Find() {
           />
         )}
         {step.kind === 'done' && (
-          <DoneStep step={step} onAgain={() => setStep({ kind: 'ask' })} onBack={() => setStep({ kind: 'results', rec: step.rec })} />
+          <DoneStep step={step} token={token} onAgain={() => setStep({ kind: 'ask' })} onBack={() => setStep({ kind: 'results', rec: step.rec })} />
         )}
 
         <Link to="/browse" className="muted">
@@ -457,14 +458,34 @@ function DetailStep({
 
 function DoneStep({
   step,
+  token,
   onAgain,
   onBack,
 }: {
   step: Extract<Step, { kind: 'done' }>
+  token: string | null
   onAgain: () => void
   onBack: () => void
 }) {
   const { item, slot, result, rec } = step
+  const [cancelled, setCancelled] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function cancel() {
+    if (!token || !result.reservation) return
+    setError(null)
+    setBusy(true)
+    try {
+      const res = await cancelReservation(token, result.reservation.id)
+      setCancelled(res.notice ?? 'Cancelled.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not cancel')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <>
       {result.simulated && (
@@ -473,7 +494,7 @@ function DoneStep({
         </p>
       )}
       <section className="detail">
-        <h2>{result.simulated ? 'Simulated booking' : 'Booking confirmed'}</h2>
+        <h2>{cancelled ? 'Cancelled' : result.simulated ? 'Simulated booking' : 'Booking confirmed'}</h2>
         <p>{item.restaurant.name}</p>
         <dl>
           <dt>When</dt>
@@ -486,6 +507,21 @@ function DoneStep({
           <dd>{result.simulated ? 'Simulated availability' : result.providerId}</dd>
         </dl>
       </section>
+      {cancelled && (
+        <p className="notice" role="status">
+          {cancelled}
+        </p>
+      )}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      {!cancelled && result.reservation && (
+        <button className="chip" onClick={cancel} disabled={busy}>
+          {busy ? 'Cancelling…' : result.simulated ? 'Cancel this simulated booking' : 'Cancel booking'}
+        </button>
+      )}
       <button className="primary" onClick={onAgain}>
         Start a new search
       </button>
