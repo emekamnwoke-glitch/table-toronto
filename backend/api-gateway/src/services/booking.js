@@ -9,5 +9,9 @@
 // hold_window_minutes, and confirmBooking(...) locks the chosen
 // restaurant_tables row inside a transaction before writing the booking,
 // per 005_restaurant_tables.sql's concurrency note.
+//
+// ADR-0016 (proposed) changes the split: this service orchestrates (ETA
+// check, then a call through the ReservationProvider port in ../providers)
+// and the table locking above moves into the `direct` provider.
 
 module.exports = {};

@@ -57,6 +57,16 @@ billing closed 2026-08-01).
 | Geocoding | Nominatim | [0013](adr/0013-geocoding-service.md) |
 | Push notifications | Expo push (accepted exception) | [0014](adr/0014-push-notification-service.md) |
 
+## Product direction (proposed)
+
+TABLE Toronto is positioned as a dining-decision and demand layer, not a
+reservation system of record: the app works out where someone should eat
+right now and hands off to a reservation provider. Reservations sit behind
+a `ReservationProvider` port (a simulated `mock` provider exists; `direct`
+and any third-party adapter come later), and simulated data is labelled
+end to end — [ADR-0016](adr/0016-demand-layer-and-reservation-provider-port.md).
+Status: proposed, not yet accepted.
+
 ## Mobile dev workflow
 
 MapLibre native from day one means `expo prebuild` + a custom dev client,
