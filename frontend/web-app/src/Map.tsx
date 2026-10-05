@@ -66,8 +66,8 @@ export function RestaurantMap({ restaurants, selectedId, onSelect }: Props) {
         source: 'restaurants',
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': '#1f2937',
-          'circle-opacity': 0.85,
+          'circle-color': '#2b1d14',
+          'circle-opacity': 0.9,
           'circle-radius': ['step', ['get', 'point_count'], 14, 25, 18, 100, 24],
         },
       })
@@ -81,7 +81,7 @@ export function RestaurantMap({ restaurants, selectedId, onSelect }: Props) {
           'text-font': ['Noto Sans Bold'],
           'text-size': 12,
         },
-        paint: { 'text-color': '#ffffff' },
+        paint: { 'text-color': '#fbf5ea' },
       })
       m.addLayer({
         id: 'points',
@@ -89,10 +89,10 @@ export function RestaurantMap({ restaurants, selectedId, onSelect }: Props) {
         source: 'restaurants',
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-color': '#c2410c',
-          'circle-radius': 5,
+          'circle-color': '#c56a3c',
+          'circle-radius': 5.5,
           'circle-stroke-width': 1.5,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': '#fbf5ea',
         },
       })
       m.addLayer({
@@ -101,10 +101,10 @@ export function RestaurantMap({ restaurants, selectedId, onSelect }: Props) {
         source: 'restaurants',
         filter: ['==', ['get', 'id'], ''],
         paint: {
-          'circle-color': '#c2410c',
+          'circle-color': '#c56a3c',
           'circle-radius': 9,
           'circle-stroke-width': 3,
-          'circle-stroke-color': '#1f2937',
+          'circle-stroke-color': '#2b1d14',
         },
       })
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchRestaurants, type Restaurant } from './api'
+import { Logo } from './Logo'
 import { RestaurantMap } from './Map'
 
 export default function Merchant() {
@@ -29,8 +30,8 @@ export default function Merchant() {
     <div className="app">
       <aside className="panel">
         <header>
-          <h1>Table Toronto</h1>
-          <p className="muted">Merchant dashboard · <a href="/">Customer view</a></p>
+          <Logo />
+          <p className="muted" style={{ marginTop: 6 }}>Merchant dashboard · <a href="/">Customer view</a></p>
         </header>
         <input
           type="search"

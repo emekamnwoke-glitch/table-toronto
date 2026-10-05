@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchRestaurants, type Restaurant } from '../api'
 import { useAuth } from '../authContext'
+import { Logo } from '../Logo'
 import { RestaurantMap } from '../Map'
 
 export default function Customer() {
@@ -55,8 +56,8 @@ export default function Customer() {
       <aside className="panel">
         <header className="row">
           <div>
-            <h1>Table Toronto</h1>
-            <p className="muted">Hi{user?.displayName ? `, ${user.displayName}` : ''}</p>
+            <Logo />
+            <p className="muted" style={{ marginTop: 6 }}>Hi{user?.displayName ? `, ${user.displayName}` : ''}</p>
           </div>
           <button className="link" onClick={signOut}>
             Sign out
