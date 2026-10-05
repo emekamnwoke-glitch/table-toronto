@@ -13,7 +13,7 @@ measuring whether each changes what diners choose. Reservations
 sit behind a provider port, so the app does not depend on any one booking
 system; clearly labelled simulated availability stands in until a real one
 is connected. See [ADR-0016](docs/architecture/adr/0016-demand-layer-and-reservation-provider-port.md)
-(proposed) for the reasoning and what is still open.
+for the reasoning and what is still open.
 
 It is a solo reimplementation of the *Tablé* concept, rescoped from
 Manhattan to Toronto, Ontario, on an open-source stack. Inspired by

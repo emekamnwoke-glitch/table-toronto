@@ -57,7 +57,7 @@ billing closed 2026-08-01).
 | Geocoding | Nominatim | [0013](adr/0013-geocoding-service.md) |
 | Push notifications | Expo push (accepted exception) | [0014](adr/0014-push-notification-service.md) |
 
-## Product direction (proposed)
+## Product direction
 
 TABLE Toronto is positioned as a dining-decision and demand layer, not a
 reservation system of record. The principle: help someone choose where to
@@ -71,7 +71,7 @@ a credible source exists, each as its own measured ranking version. Reservations
 a `ReservationProvider` port (a simulated `mock` provider exists; `direct`
 and any third-party adapter come later), and simulated data is labelled
 end to end — [ADR-0016](adr/0016-demand-layer-and-reservation-provider-port.md).
-Status: proposed, not yet accepted.
+Status: accepted (ADR-0016), with a few questions still open: whether any third-party reservation API is obtainable, the source for "how busy now", and the fate of the original's flash-deal mechanism.
 
 ## Mobile dev workflow
 

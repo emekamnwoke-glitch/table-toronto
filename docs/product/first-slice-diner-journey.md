@@ -1,6 +1,6 @@
 # First slice: the diner journey
 
-**Status:** Built (first slice), against the proposed ADR-0016. Implements the principle in
+**Status:** Built (first slice). Implements the principle in
 [ADR-0016](../architecture/adr/0016-demand-layer-and-reservation-provider-port.md):
 help someone choose where to eat now, then observe what they do after
 seeing the recommendation. Events are specified in

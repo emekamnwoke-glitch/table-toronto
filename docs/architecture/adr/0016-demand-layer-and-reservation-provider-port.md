@@ -1,7 +1,7 @@
 # ADR-0016: Dining-decision and demand layer; reservations behind a provider port
 
-**Status:** Proposed
-**Date:** 2026-10-05 (revised 2026-10-05: product principle and event measurement added)
+**Status:** Accepted, with the open questions at the end unresolved (none blocks the decision)
+**Date:** 2026-10-05 (proposed and revised 2026-10-05; accepted 2026-10-05)
 
 ## Context
 
@@ -20,11 +20,13 @@ should they eat right now?* Reservation is what happens after that
 decision, and it can be done by whichever system already holds the
 inventory.
 
-What exists today: PostGIS restaurants and neighbourhoods, diner and
-manager accounts, onboarding preferences, a manager dashboard, and
-`bookings` / `restaurant_tables` tables (migrations 005-006) whose
-`booking.js` service is still a stub. Nothing records user behaviour, and
-nothing yet depends on the booking model.
+What existed when this was written: PostGIS restaurants and
+neighbourhoods, diner and manager accounts, onboarding preferences, a
+manager dashboard, and `bookings` / `restaurant_tables` tables (migrations
+005-006) whose `booking.js` service was a stub. Nothing recorded user
+behaviour, and nothing depended on the booking model. The provider port, the
+first diner journey and its event capture have since been built to this
+decision (see Consequences).
 
 ## Decision
 

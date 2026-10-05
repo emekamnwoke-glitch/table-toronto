@@ -30,7 +30,7 @@ A single blueprint-style sheet maps every ADR below onto the running system — 
 | [0013](0013-geocoding-service.md) | Geocoding: Nominatim | Accepted |
 | [0014](0014-push-notification-service.md) | Push notifications: Expo push (open-source exception) | Accepted |
 | [0015](0015-geospatial-python-io-backend.md) | Geospatial Python IO backend: pyogrio over fiona | Accepted |
-| [0016](0016-demand-layer-and-reservation-provider-port.md) | Dining-decision and demand layer; reservations behind a provider port | Proposed |
+| [0016](0016-demand-layer-and-reservation-provider-port.md) | Dining-decision and demand layer; reservations behind a provider port | Accepted |
 
 ## Adding a new ADR
 

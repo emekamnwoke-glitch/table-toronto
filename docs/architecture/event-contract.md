@@ -1,6 +1,6 @@
 # Event contract
 
-**Status:** Proposed; implemented for the first slice. Defines the
+**Status:** Implemented for the first slice. Defines the
 behaviour events from
 [ADR-0016](adr/0016-demand-layer-and-reservation-provider-port.md) Decision
 6, for the journey in
