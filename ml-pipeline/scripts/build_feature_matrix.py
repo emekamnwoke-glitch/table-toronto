@@ -11,12 +11,12 @@ data we actually have right now:
   - weekday indicators    (is_friday, is_saturday, is_sunday)
 
 Still missing, blocked on open decisions (see DECISIONS.md):
-  - google_rating, review_count, typical_visit_duration  -- needs
-    Google Places API access, not yet set up
+  - google_rating, review_count, typical_visit_duration  -- no source:
+    Google Places content can't be stored or used for training (ADR-0017)
   - restaurant_area, turnover_rate, takeaway_ratio        -- needs a
     PLUTO-equivalent land-use/cuisine source, not yet chosen
-  - busyness_level (the TARGET)                           -- also
-    Google Places popular-times data
+  - busyness_level (the TARGET)                           -- no
+    legitimate source yet (Places has no popular-times field; ADR-0017)
 
 Running this now is still useful: it's the full restaurant x time grid
 the app needs for serving predictions at every hour, and it's the
@@ -86,7 +86,7 @@ def main():
     print(f"{no_coverage:,} of {n_restaurants:,} restaurants ({no_coverage / n_restaurants:.1%}) "
           f"have zero mobility-proxy coverage for every hour")
     print("7 of 16 feature columns are populated; the rest (including the target) "
-          "are empty pending the Google Places / land-use decisions in DECISIONS.md")
+          "are empty (no legitimate source for the Google-derived columns, see ADR-0017; land-use decision still open)")
 
 
 if __name__ == "__main__":

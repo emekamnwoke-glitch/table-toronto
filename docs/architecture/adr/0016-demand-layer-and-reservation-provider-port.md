@@ -229,11 +229,10 @@ unaffected.
   on what terms. The partner-programme claims in the strategy notes that
   prompted this ADR have not been verified against the provider's own
   documentation. The port does not depend on the answer.
-- The source for "how busy is it now". Google's official Places API, to my
-  knowledge, returns hours, rating, price level and place types but not
-  popular-times data; this needs checking before the busyness model's
-  training target is assumed obtainable (it is the open decision recorded
-  in the project notes).
+- The source for "how busy is it now". Checked in [ADR-0017](0017-no-google-places-content.md):
+  Google's Places API has no popular-times data and its terms rule out the
+  uses this project would need, so it is not a source. A legitimate source
+  is still open.
 - Whether `direct` should enforce the ETA rule at booking time or only at
   arrival, once slots exist.
 - What happens to the original's flash-deal mechanism (migration 007's

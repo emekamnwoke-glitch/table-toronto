@@ -37,8 +37,10 @@ builds the restaurant x weekday x hour grid, but only 3 of the original's
 9 feature groups are populated (mobility demand, cyclical time, weekday
 flags). Rating, review count, visit duration, restaurant area, turnover
 rate, takeaway ratio, and the busyness-level target itself are all still
-empty placeholder columns — every one of them needs the Google Places
-API decision below before the model can train on anything.
+empty placeholder columns. The Google Places route that would have filled
+them is closed ([ADR-0017](adr/0017-no-google-places-content.md)): the Places
+API has no popular-times data and its terms forbid the storage and model
+training this needed. The busyness target has no legitimate source yet.
 
 ## Infrastructure — open source end to end
 
@@ -85,5 +87,7 @@ not the original's plain Expo Go tunnel workflow — see
 - Dokku vs. CapRover final pick — deferred to actual VPS provisioning.
 - EAS Build vs. fully local native builds for mobile distribution.
 - Final project name (working name: `table-toronto`).
-- Google Places API access for the popular-times training target — not
-  yet set up; the one piece of the pipeline that can't be free/open.
+- A legitimate source for the busyness training target and any "how busy now"
+  signal. Google Places is ruled out ([ADR-0017](adr/0017-no-google-places-content.md)).
+  Candidates, all unmeasured: OpenStreetMap tags, manager-entered data,
+  manager-reported current busyness.

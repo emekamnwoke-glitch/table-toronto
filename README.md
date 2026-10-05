@@ -95,8 +95,8 @@ simulated confirmation is never counted as a booking. See
 [`docs/product/first-slice-diner-journey.md`](docs/product/first-slice-diner-journey.md)
 and [`docs/architecture/event-contract.md`](docs/architecture/event-contract.md).
 
-**Not built yet:** any ranking signal other than proximity; the busyness model (the training
-target needs a data source that is still undecided); real reservation
+**Not built yet:** any ranking signal other than proximity; the busyness model (its training
+target has no legitimate source: Google Places is ruled out, see ADR-0017); real reservation
 availability; the mobile app; routing/ETA through Valhalla.
 
 **Known data gaps:** the restaurant listings come from business licences,

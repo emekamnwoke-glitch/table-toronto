@@ -1,6 +1,6 @@
 # ADR-0003: Restaurant listing data source
 
-**Status:** Accepted
+**Status:** Accepted (last consequence superseded by [ADR-0017](0017-no-google-places-content.md))
 **Date:** 2026-09-27
 
 ## Context
@@ -28,6 +28,8 @@ added separately via geocoding (ADR-0013).
   will be wrong in the dataset. This is a known, documented limitation,
   not an oversight — the portal's "last refreshed" metadata is misleading
   and should not be mistaken for the underlying data being current.
-- The Google Places API is still used for the one field it's uniquely
+- ~~The Google Places API is still used for the one field it's uniquely
   positioned to provide — the popular-times target value used to train
-  the busyness model — independent of this decision.
+  the busyness model.~~ **Superseded by ADR-0017:** the Places API has no
+  popular-times field, and Google's terms forbid storing its content, using
+  it with a non-Google map, and using it to train models.
