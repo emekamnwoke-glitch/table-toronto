@@ -97,7 +97,7 @@ test("registry: the first provider is the default, duplicates are rejected, bad 
   assert.equal(getProvider("mock"), mock);
   assert.deepEqual(listProviders().map((p) => p.id), ["mock"]);
   assert.throws(() => registerProvider(createMockProvider()), /already registered/);
-  assert.throws(() => registerProvider({ id: "broken", displayName: "x", capabilities: {} }), /capabilities/);
+  assert.throws(() => registerProvider({ id: "broken", displayName: "x", simulated: true, capabilities: {} }), /capabilities/);
   assert.throws(() => getProvider("nope"), /No reservation provider/);
   resetProviders();
   assert.throws(() => getProvider(), /No reservation provider/);

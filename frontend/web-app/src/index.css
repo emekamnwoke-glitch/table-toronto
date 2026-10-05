@@ -179,3 +179,14 @@ legend { font-family: var(--font-display); font-size: 18px; margin-bottom: 10px;
   min-height: 44px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px;
   background: var(--surface); color: var(--ink); font: inherit;
 }
+
+/* Diner journey */
+.badge {
+  display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px;
+  background: var(--secondary); border: 1px solid var(--border);
+  font-family: var(--font-body); font-size: 12px; font-weight: 600; vertical-align: middle;
+}
+.stack h1 { font-size: 24px; }
+.stack select {
+  appearance: auto;
+}

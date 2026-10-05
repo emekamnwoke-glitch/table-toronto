@@ -1,7 +1,7 @@
 # ADR-0016: Dining-decision and demand layer; reservations behind a provider port
 
 **Status:** Proposed
-**Date:** 2026-10-05
+**Date:** 2026-10-05 (revised 2026-10-05: product principle and event measurement added)
 
 ## Context
 
@@ -29,9 +29,14 @@ nothing yet depends on the booking model.
 ## Decision
 
 1. **Position the product as a dining-decision and demand layer.** The
-   consumer experience is "best options for this moment"; it ends in a
-   reservation hand-off. The app is not the system of record for
-   reservations.
+   product principle: *help someone choose where to eat now, then observe
+   what they do after seeing the recommendation.* The consumer experience
+   is "best options for this moment"; it ends in a reservation hand-off,
+   and what happens after the recommendation is measured as part of the
+   product (Decision 6), not added later as analytics. The app is not the
+   system of record for reservations. The earlier model where the app owns
+   table inventory and confirms bookings is a **future provider option**
+   (`direct`, below), not the product's defining model.
 
 2. **Put reservations behind a `ReservationProvider` port.** The
    interface (`backend/api-gateway/src/providers/reservationProvider.js`)
@@ -69,6 +74,55 @@ nothing yet depends on the booking model.
    (a `restaurant_provider_refs` table when the first real adapter needs
    one).
 
+6. **Measure what the diner does next, honestly.** The first journey is
+   *dining moment → ranked options → the diner's next action*. Each
+   recommendation must be able to say which signals shaped it, and a
+   missing or simulated signal is labelled as such, never shown as a live
+   fact (Decision 7 says which signals the first version may use). Five
+   events are captured, in order:
+
+   | Event | Records |
+   |---|---|
+   | `recommendation_shown` | Which restaurants were presented, in what order, and which signals were used (with their data status) |
+   | `restaurant_opened` | Which option the diner opened, and its rank |
+   | `reservation_intent` | That the diner chose to continue toward booking |
+   | `handoff_started` | That TABLE sent the diner to a booking destination, and whether that destination was a demo |
+   | `booking_outcome_received` | `confirmed` or `cancelled`, from the provider; emitted only when an outcome is actually received |
+
+   This gives one funnel: shown → opened → intent → handoff → confirmed,
+   where confirmation data exists. Rules: a handoff is never reported as a
+   completed reservation; a missing outcome stays unknown and no
+   confirmation is ever emitted without one; and simulated or demo events are kept
+   apart from measured ones in every count (Decision 3). Reservation choice
+   stays downstream of the recommendation: initially TABLE shows clearly
+   labelled simulated availability and records whether the diner continues
+   toward booking.
+
+   The first journey, its success criteria and ranking rules are in
+   [`docs/product/first-slice-diner-journey.md`](../../product/first-slice-diner-journey.md);
+   field-level event definitions, who emits each event, and the counting
+   rules are in [`docs/architecture/event-contract.md`](../event-contract.md).
+   Events never store the diner's coordinates. A booking is counted as
+   confirmed only when TABLE receives a real confirmation; the simulated
+   provider's confirmations are recorded with `simulated = true` and are
+   never counted as bookings.
+
+7. **The first honest signal is proximity; others are added one at a
+   time.** Proximity is the only signal the current data supports for every
+   restaurant (each has coordinates; the diner supplies a location), so the
+   first ranking version (`v1-proximity`) orders by straight-line distance,
+   labelled as straight line, and by nothing else. Simulated availability is
+   shown beside it but does not shape the order. Demand, weather and wait
+   time appear only when there is a credible source: a named source and
+   licence, known coverage and freshness, and a label for missing cases. A
+   signal that fails that gate is not shown and is never given a guessed
+   value. Each new signal ships as its own ranking version and is compared
+   with the previous one (a recorded `variant`, added when a second ranking
+   version exists) on open rate, continue rate
+   and chosen rank, reported with its sample size; at this project's traffic
+   the comparison demonstrates the mechanism, and claims about a signal's
+   effect need enough volume to support them.
+
 What does not change: the data, infrastructure and map decisions in
 ADR-0002 to ADR-0015, the auth and role model, the Terracotta identity,
 and the fresh-build rule in ADR-0001.
@@ -93,7 +147,7 @@ product and booking rows.
 | **Geography** | Manhattan only | Full amalgamated City of Toronto, 158 neighbourhoods | [0002](0002-scope-full-amalgamated-toronto.md) |
 | **Restaurant and venue data** | NYC sources (including PLUTO land use) | Toronto Business Licences, frozen at Dec 2022; carries no cuisine, hours, rating or availability. A PLUTO equivalent is still unchosen | [0003](0003-restaurant-data-source.md) |
 | **Mobility proxy** | NYC taxi drop-offs | Bike Share Toronto ridership: seasonal and thin outside downtown/midtown (375 of 7,211 restaurants have no signal at any hour) | [0004](0004-mobility-proxy-bike-share.md), [0005](0005-zone-geometry-unit.md) |
-| **Busyness model** | XGBoost via FastAPI, all nine feature groups, reported 62.7% accuracy | Feature matrix built but only three of nine groups populated and no target column; expect different accuracy and report it as a finding. Now feeds opportunity detection, so it is on the critical path | existing notes; this ADR |
+| **Busyness model** | XGBoost via FastAPI, all nine feature groups, reported 62.7% accuracy | Feature matrix built but only three of nine groups populated and no target column; expect different accuracy and report it as a finding. A possible future demand signal (Decision 7); not needed for the first slice, which ranks by proximity | existing notes; this ADR |
 | **Hosting** | GCP: Cloud Run, Firebase Hosting (projects deleted and billing closed 2026-08-01) | Self-hosted Dokku or CapRover on a VPS, Caddy for static files | [0006](0006-compute-hosting-platform.md), [0007](0007-web-app-hosting.md) |
 | **Database** | Cloud SQL (managed Postgres) | Self-hosted PostgreSQL + PostGIS | [0008](0008-database-engine-and-hosting.md) |
 | **Maps and tiles** | Google Maps JS SDK | MapLibre GL JS (web), MapLibre native (mobile), OpenFreeMap tiles | [0009](0009-web-map-rendering-library.md), [0010](0010-mobile-map-rendering-approach.md), [0011](0011-map-tile-provider.md) |
@@ -140,9 +194,11 @@ unaffected.
   "current demand / how busy" (needs a data source, see below). Until
   then, availability is simulated and the busyness fields stay empty or
   simulated and labelled.
-- The consumer app will need an events table (impression, view,
-  reservation intent, click, booking) before any funnel or partner view is
-  honest. Out of scope here; it is the next decision after this one.
+- Event capture (Decision 6) is part of the first slice, not a later
+  analytics add-on: the demo journey and its events were built together
+  (migration 011, `services/events.js`, `services/funnel.js`), and no funnel
+  is shown without them. Providers now declare `simulated`, and the server
+  derives each event's flag from it.
 - Any "partner view" or dashboard built before real data exists must be
   visibly a demonstration. Fabricated conversion or cover counts presented
   as results would undermine the project.
@@ -154,8 +210,8 @@ unaffected.
 
 - **Keep the original marketplace model (the app owns inventory).**
   Rejected as the defining model: it cannot be real at city scale and
-  hides the part of the product that is genuinely new. It survives as the
-  `direct` provider.
+  hides the part of the product that is genuinely new. It survives as a
+  future provider option (`direct`), not the product's defining model.
 - **Integrate one named reservation system directly.** Rejected: it ties
   the app's architecture and demo to access that has not been granted, and
   leaves nothing working without it.

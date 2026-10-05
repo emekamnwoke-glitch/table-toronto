@@ -60,8 +60,14 @@ billing closed 2026-08-01).
 ## Product direction (proposed)
 
 TABLE Toronto is positioned as a dining-decision and demand layer, not a
-reservation system of record: the app works out where someone should eat
-right now and hands off to a reservation provider. Reservations sit behind
+reservation system of record. The principle: help someone choose where to
+eat now, then observe what they do after seeing the recommendation. The
+app works out where someone should eat right now, hands off to a
+reservation provider, and records the next action (shown → opened →
+intent → handoff → confirmed, with handoffs never counted as completed
+reservations). The first recommendation signal is proximity (straight-line
+distance, labelled as such); further signals are added one at a time once
+a credible source exists, each as its own measured ranking version. Reservations sit behind
 a `ReservationProvider` port (a simulated `mock` provider exists; `direct`
 and any third-party adapter come later), and simulated data is labelled
 end to end — [ADR-0016](adr/0016-demand-layer-and-reservation-provider-port.md).

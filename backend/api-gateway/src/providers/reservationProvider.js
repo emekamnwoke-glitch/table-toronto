@@ -88,6 +88,8 @@
  * @typedef {Object} ReservationProvider
  * @property {string} id            Stable machine id, e.g. "mock", "direct"
  * @property {string} displayName
+ * @property {boolean} simulated   True if everything this provider returns is simulated. The
+ *   server derives the `simulated` flag on reservation events from this.
  * @property {ProviderCapabilities} capabilities
  * @property {(q: AvailabilityQuery) => Promise<RestaurantAvailability[]>} getAvailability
  *   One entry per requested restaurant, in request order.
@@ -132,6 +134,7 @@ function assertReservationProvider(provider) {
   if (!provider || typeof provider !== "object") throw new TypeError("provider must be an object");
   if (typeof provider.id !== "string" || !provider.id) throw new TypeError("provider.id must be a non-empty string");
   if (typeof provider.displayName !== "string") throw new TypeError(`${provider.id}: displayName must be a string`);
+  if (typeof provider.simulated !== "boolean") throw new TypeError(`${provider.id}: simulated must be a boolean`);
   for (const flag of REQUIRED_CAPABILITIES) {
     if (typeof provider.capabilities?.[flag] !== "boolean") {
       throw new TypeError(`${provider.id}: capabilities.${flag} must be a boolean`);

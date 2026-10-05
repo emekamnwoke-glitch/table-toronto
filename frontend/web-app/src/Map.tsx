@@ -1,14 +1,9 @@
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { FeatureCollection, Point } from 'geojson'
+import './maplibreSetup'
 import { useEffect, useRef } from 'react'
 import type { Restaurant } from './api'
-
-// maplibre-gl v6 ships its worker as ES modules that import each other, which
-// bundlers don't pick up; vite.config.ts serves/emits both under /maplibre/.
-maplibregl.setWorkerUrl(
-  new URL(`${import.meta.env.BASE_URL}maplibre/maplibre-gl-worker.mjs`, location.origin).href,
-)
 
 // OpenFreeMap, no key required (ADR-0011).
 const STYLE = 'https://tiles.openfreemap.org/styles/positron'
@@ -18,6 +13,15 @@ interface Props {
   restaurants: Restaurant[]
   selectedId: string | null
   onSelect: (id: string | null) => void
+  /** Zoom to the given restaurants whenever they change (for short result lists). */
+  fit?: boolean
+}
+
+function fitTo(m: maplibregl.Map, restaurants: Restaurant[]) {
+  if (restaurants.length === 0) return
+  const bounds = new maplibregl.LngLatBounds()
+  for (const r of restaurants) bounds.extend([r.lng, r.lat])
+  m.fitBounds(bounds, { padding: 90, maxZoom: 16, duration: 0 })
 }
 
 function toGeoJSON(restaurants: Restaurant[]): FeatureCollection {
@@ -31,14 +35,14 @@ function toGeoJSON(restaurants: Restaurant[]): FeatureCollection {
   }
 }
 
-export function RestaurantMap({ restaurants, selectedId, onSelect }: Props) {
+export function RestaurantMap({ restaurants, selectedId, onSelect, fit = false }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const ready = useRef(false)
-  const latest = useRef({ restaurants, selectedId, onSelect })
+  const latest = useRef({ restaurants, selectedId, onSelect, fit })
   // Event handlers registered once on the map read the latest props from here.
   useEffect(() => {
-    latest.current = { restaurants, selectedId, onSelect }
+    latest.current = { restaurants, selectedId, onSelect, fit }
   })
 
   useEffect(() => {
@@ -131,6 +135,7 @@ export function RestaurantMap({ restaurants, selectedId, onSelect }: Props) {
         toGeoJSON(latest.current.restaurants),
       )
       m.setFilter('selected', ['==', ['get', 'id'], latest.current.selectedId ?? ''])
+      if (latest.current.fit) fitTo(m, latest.current.restaurants)
     })
 
     return () => {
@@ -143,7 +148,8 @@ export function RestaurantMap({ restaurants, selectedId, onSelect }: Props) {
     const m = map.current
     if (!m || !ready.current) return
     ;(m.getSource('restaurants') as maplibregl.GeoJSONSource).setData(toGeoJSON(restaurants))
-  }, [restaurants])
+    if (fit) fitTo(m, restaurants)
+  }, [restaurants, fit])
 
   useEffect(() => {
     const m = map.current

@@ -120,6 +120,7 @@ function createMockProvider({ slotCapacity = 20, isKnownRestaurant = () => true,
   return {
     id: "mock",
     displayName: "Simulated availability",
+    simulated: true,
     capabilities: { liveAvailability: false, createReservation: true, cancelReservation: true },
 
     async getAvailability({ restaurantIds, partySize, date, around } = {}) {

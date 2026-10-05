@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './authContext'
 import Customer from './pages/Customer'
+import Find from './pages/Find'
 import Login from './pages/Login'
 import Merchant from './Merchant'
 import Onboarding from './pages/Onboarding'
@@ -45,7 +46,7 @@ function Home() {
   const { user } = useAuth()
   if (user?.role === 'manager') return <Navigate to="/merchant" replace />
   if (user && !user.onboarded) return <Navigate to="/onboarding" replace />
-  return <Customer />
+  return <Find />
 }
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
       <Route path="/merchant/login" element={<Login mode="login" audience="manager" />} />
       <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
       <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
+      <Route path="/browse" element={<RequireAuth><Customer /></RequireAuth>} />
       <Route
         path="/merchant"
         element={

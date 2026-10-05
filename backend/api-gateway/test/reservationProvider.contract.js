@@ -32,7 +32,9 @@ function runProviderContract(label, makeProvider, { knownRestaurantId, unknownRe
   }
 
   test(`${label}: implements the interface`, () => {
-    assertReservationProvider(makeProvider());
+    const provider = makeProvider();
+    assertReservationProvider(provider);
+    assert.equal(typeof provider.simulated, "boolean");
   });
 
   test(`${label}: availability has one entry per restaurant, in order, with provenance`, async () => {

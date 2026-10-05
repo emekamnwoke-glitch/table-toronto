@@ -8,6 +8,10 @@ const restaurantsRouter = require("./routes/restaurants");
 const { router: authRouter } = require("./routes/auth");
 const usersRouter = require("./routes/users");
 const merchantRouter = require("./routes/merchant");
+const journeyRouter = require("./routes/journey");
+const { setupProviders } = require("./providers/setup");
+
+setupProviders();
 
 const app = express();
 
@@ -23,5 +27,6 @@ app.use("/api/v1/restaurants", restaurantsRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/merchant", merchantRouter);
+app.use("/api/v1", journeyRouter);
 
 module.exports = app;

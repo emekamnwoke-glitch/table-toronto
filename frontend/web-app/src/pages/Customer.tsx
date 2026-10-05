@@ -81,6 +81,7 @@ export default function Customer() {
             isn't applied.
           </p>
         )}
+        <Link to="/">Find a table near you</Link>
         <Link to="/onboarding" className="muted">
           {hasPrefs ? 'Edit preferences' : 'Set your preferences'}
         </Link>
