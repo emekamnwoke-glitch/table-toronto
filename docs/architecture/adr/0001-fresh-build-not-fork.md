@@ -2,6 +2,9 @@
 
 **Status:** Accepted
 **Date:** 2026-09-27
+**Refined by:** [ADR-0016](0016-demand-layer-and-reservation-provider-port.md)
+(proposed) — which product ideas carry over from the original, and a full
+list of what changed.
 
 ## Context
 

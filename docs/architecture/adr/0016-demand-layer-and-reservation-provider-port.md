@@ -73,6 +73,56 @@ What does not change: the data, infrastructure and map decisions in
 ADR-0002 to ADR-0015, the auth and role model, the Terracotta identity,
 and the fresh-build rule in ADR-0001.
 
+## What changes from the original project
+
+The original (`comp47360-team2`, "Tablé": *tables available now,
+reachable in time*) was a six-person academic MVP for Manhattan: a
+two-sided marketplace where restaurants release spare table capacity,
+nearby diners receive private flash offers, and an in-app booking is
+confirmed only if the diner can arrive within the restaurant's hold
+window. Table Toronto keeps its ideas and changes the following. Rows
+marked ADR-0001 to ADR-0015 were decided earlier; this ADR adds the
+product and booking rows.
+
+| Area | Original (Tablé) | Table Toronto | Decided in |
+|---|---|---|---|
+| **Product** | Two-sided immediate-dining marketplace; the app owns table inventory and confirms bookings | Dining-decision and demand layer: works out where to eat right now, then hands off to a reservation provider | **This ADR** |
+| **Core loop** | Restaurant releases capacity → private flash offers to nearby diners → booking | Context-aware recommendation → reservation hand-off. Spare-capacity detection ("opportunity") is the successor to manager-launched campaigns; how the existing offer tables fit is **open** (see below) | **This ADR** |
+| **Booking** | In-app, ETA-gated against `hold_window_minutes`, table locked in a transaction | Behind a `ReservationProvider` port. The ETA rule and table locking become the policy of a future `direct` provider; slots are dated and time-limited | **This ADR** |
+| **Data honesty** | Simulated/historical restaurant data, stated in the architecture notes | Same posture, made structural: every availability result and reservation carries `simulated`, and simulated rows are excluded from anything presented as measured | **This ADR** |
+| **Geography** | Manhattan only | Full amalgamated City of Toronto, 158 neighbourhoods | [0002](0002-scope-full-amalgamated-toronto.md) |
+| **Restaurant and venue data** | NYC sources (including PLUTO land use) | Toronto Business Licences, frozen at Dec 2022; carries no cuisine, hours, rating or availability. A PLUTO equivalent is still unchosen | [0003](0003-restaurant-data-source.md) |
+| **Mobility proxy** | NYC taxi drop-offs | Bike Share Toronto ridership: seasonal and thin outside downtown/midtown (375 of 7,211 restaurants have no signal at any hour) | [0004](0004-mobility-proxy-bike-share.md), [0005](0005-zone-geometry-unit.md) |
+| **Busyness model** | XGBoost via FastAPI, all nine feature groups, reported 62.7% accuracy | Feature matrix built but only three of nine groups populated and no target column; expect different accuracy and report it as a finding. Now feeds opportunity detection, so it is on the critical path | existing notes; this ADR |
+| **Hosting** | GCP: Cloud Run, Firebase Hosting (projects deleted and billing closed 2026-08-01) | Self-hosted Dokku or CapRover on a VPS, Caddy for static files | [0006](0006-compute-hosting-platform.md), [0007](0007-web-app-hosting.md) |
+| **Database** | Cloud SQL (managed Postgres) | Self-hosted PostgreSQL + PostGIS | [0008](0008-database-engine-and-hosting.md) |
+| **Maps and tiles** | Google Maps JS SDK | MapLibre GL JS (web), MapLibre native (mobile), OpenFreeMap tiles | [0009](0009-web-map-rendering-library.md), [0010](0010-mobile-map-rendering-approach.md), [0011](0011-map-tile-provider.md) |
+| **Routing and geocoding** | Google Routes API (cached), with a distance fallback | Self-hosted Valhalla; Nominatim | [0012](0012-routing-eta-engine.md), [0013](0013-geocoding-service.md) |
+| **Push notifications** | Expo push | Expo push, kept as the one non-open-source exception | [0014](0014-push-notification-service.md) |
+| **Team and authorship** | Six-person course project, shared code | Solo portfolio project; fresh codebase, no code or history carried over | [0001](0001-fresh-build-not-fork.md) |
+| **Clients** | Consumer mobile (Expo) and merchant web (React + Vite) sharing Redux Toolkit / RTK Query | One web app (React + Vite, react-router, React context) serving diner and manager screens; the mobile app is not built yet | built, not a recorded decision |
+| **Auth and roles** | JWT bearer, with an interim `X-User-Id` header for web demos; guest discovery | JWT bearer only; no guest mode yet. Diners self-register; managers are provisioned by an operator (`create-manager`) | built, not a recorded decision |
+| **Onboarding preferences** | Budget tier, dietary tags, cuisines, dining styles, wheelchair and sensory access needs | Cuisines, budget (1-4), dining style, accessibility needs. Dietary tags are **not** carried over yet; preferences are saved but only wheelchair and cuisine are used, and only where restaurant data has values | built, not a recorded decision |
+| **API gateway** | Express 5 | Express 4 | built, not a recorded decision |
+| **Visual identity** | Not carried over | Terracotta: cream and ink-brown with a clay accent, DM Serif Display and DM Sans | built, not a recorded decision |
+
+**Carried over unchanged:** the four-part monorepo split (frontend,
+backend, ml-pipeline, database); Node/Express and PostgreSQL for the
+gateway and data; JWT bearer authentication; the hold-window idea and ETA
+validation as a rule (now provider policy rather than the only booking
+model); treating accessibility needs as a hard constraint rather than a
+ranking preference; and the practice of reporting data limitations as
+findings rather than hiding them.
+
+### Relationship to ADR-0001
+
+ADR-0001 says the rebuild reuses "the ETA-gated booking flow, and the
+private flash-deal matching concept" as design inspiration. That stays
+true of the *inspiration* but this ADR refines how: ETA-gated booking
+survives as provider policy, and the flash-deal concept is the open item
+below. ADR-0001's rule that no code or history is carried over is
+unaffected.
+
 ## Consequences
 
 - The booking service becomes provider-agnostic. `services/booking.js`
@@ -126,3 +176,8 @@ and the fresh-build rule in ADR-0001.
   in the project notes).
 - Whether `direct` should enforce the ETA rule at booking time or only at
   arrival, once slots exist.
+- What happens to the original's flash-deal mechanism (migration 007's
+  `campaigns` and `offers`, and the `campaigns.js` service stub). Options:
+  keep manager-launched campaigns alongside system-detected opportunity;
+  fold campaigns into opportunity as the manager's way of acting on it; or
+  drop them. Undecided, and nothing is built either way.
