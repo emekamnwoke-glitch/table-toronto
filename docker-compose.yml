@@ -18,19 +18,60 @@ services:
       timeout: 5s
       retries: 10
 
-  # api-gateway:
-  #   build: ./backend/api-gateway
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   env_file: .env
-  #   ports:
-  #     - "3001:3001"
+  # Applies migrations once, then exits. The api-gateway waits for it.
+  migrate:
+    build: ./database
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-table_toronto}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-table_toronto}
+    restart: "no"
 
-  # web-app:
-  #   build: ./frontend/web-app
-  #   ports:
-  #     - "5173:5173"
+  api-gateway:
+    build: ./backend/api-gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-table_toronto}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-table_toronto}
+      # Required, at least 32 chars. Set in .env.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      EVENT_PSEUDONYM_KEY: ${EVENT_PSEUDONYM_KEY:?set EVENT_PSEUDONYM_KEY in .env}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    # Passed explicitly rather than with env_file, so unrelated keys in .env
+    # (such as GOOGLE_PLACES_API_KEY) never reach the API container.
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web-app:
+    build: ./frontend/web-app
+    depends_on:
+      - api-gateway
+    ports:
+      - "5173:80"
+
+  # Browser for the database, with write access. Bound to localhost only
+  # because pgweb has no login of its own.
+  pgweb:
+    image: sosedoff/pgweb:0.16.2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - --bind=0.0.0.0
+      - --listen=8081
+      - --url=postgres://${POSTGRES_USER:-table_toronto}:${POSTGRES_PASSWORD:-change_me}@postgres:5432/${POSTGRES_DB:-table_toronto}?sslmode=disable
+    ports:
+      - "127.0.0.1:8081:8081"
 
   # ml-service:
   #   build: ./ml-pipeline/fastapi-app
