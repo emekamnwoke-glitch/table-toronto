@@ -32,6 +32,7 @@ A single blueprint-style sheet maps every ADR below onto the running system — 
 | [0015](0015-geospatial-python-io-backend.md) | Geospatial Python IO backend: pyogrio over fiona | Accepted |
 | [0016](0016-demand-layer-and-reservation-provider-port.md) | Dining-decision and demand layer; reservations behind a provider port | Accepted |
 | [0017](0017-no-google-places-content.md) | No Google Places content for ranking, storage or model training | Accepted |
+| [0018](0018-busyness-source.md) | Busyness source for the demand signal (options note) | Proposed |
 
 ## Adding a new ADR
 
