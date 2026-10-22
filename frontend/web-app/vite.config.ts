@@ -28,7 +28,10 @@ function maplibreWorker(): Plugin {
 
 // The api-gateway runs on :3001 (backend/api-gateway); proxying keeps the
 // browser same-origin in dev, so no CORS or base-URL config is needed.
+// GitHub Pages serves project sites from /<repo>/, so CI builds use that base.
+// Local dev and builds keep the root path.
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS ? '/table-toronto/' : '/',
   plugins: [react(), maplibreWorker()],
   server: { proxy: { '/api': 'http://localhost:3001' } },
 })

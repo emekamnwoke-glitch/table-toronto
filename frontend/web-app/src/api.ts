@@ -39,8 +39,13 @@ export class ApiError extends Error {
   }
 }
 
+// Empty in dev (the Vite proxy handles /api) and in the same-origin deploy.
+// Set VITE_API_BASE_URL when the API is hosted on another origin, such as
+// the GitHub Pages build, which serves only the static web client.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+
 async function request<T>(path: string, init: RequestInit = {}, token?: string | null): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       ...(init.body ? { 'Content-Type': 'application/json' } : {}),
